@@ -12,9 +12,9 @@ BOLD="\x1B[1m"
 RESET="\x1B[0m"
 
 err()    { echo -e "${RED}${BOLD}[ERROR]${RESET} $*" >&2; }
-ok()     { echo -e "${GREEN}${BOLD}[OK]${RESET} $*"; }
-warn()   { echo -e "${YELLOW}${BOLD}[WARN]${RESET} $*"; }
-info()   { echo -e "${BOLD}[INFO]${RESET} $*"; }
+ok()     { echo -e "${GREEN}${BOLD}[OK]${RESET} $*" >&2; }
+warn()   { echo -e "${YELLOW}${BOLD}[WARN]${RESET} $*" >&2; }
+info()   { echo -e "${BOLD}[INFO]${RESET} $*" >&2; }
 
 # ── Prerequisites ──────────────────────────────────────────────
 check_prerequisite() {
@@ -70,7 +70,7 @@ extract_fonts_from_dmg() {
 
     # Step 1: Extract DMG contents
     if ! 7z x "$dmg" -o"$tmp" -bd > /dev/null 2>&1; then
-        err "Failed to extract DMG: $(basename "$dmg")"
+        err "Failed to extract DMG: $(basename "$dmg")\n"
         rm -rf "$tmp"
         echo "0"
         return 1
@@ -101,7 +101,7 @@ extract_fonts_from_dmg() {
         count=$((count + 1))
     done < <(find "$tmp" -type f \( -name "*.otf" -o -name "*.ttf" \) -print0)
 
-    ok "Extracted $count font(s) from $(basename "$dmg")"
+    ok "Extracted $count font(s) from $(basename "$dmg")\n"
     rm -rf "$tmp"
     trap - RETURN
 
@@ -125,8 +125,7 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
-info "Found ${#dmgs[@]} .dmg file(s). Extracting to: $OUTPUT_DIR"
-echo ""
+info "Found ${#dmgs[@]} .dmg file(s). Extracting to: $OUTPUT_DIR\n"
 
 total_fonts=0
 success=0
