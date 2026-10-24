@@ -62,6 +62,10 @@ extract_fonts_from_dmg() {
     local dmg="$1"
     local tmp count=0
 
+    # ── Creating directory for each dmg file ───────────────────
+    local target="$OUTPUT_DIR/$(basename "${dmg%.dmg}")"
+    mkdir -p "$target"
+
     info "Processing: $(basename "$dmg")"
 
     tmp="$(mktemp -d)"
@@ -97,7 +101,7 @@ extract_fonts_from_dmg() {
             warn "Skipping suspicious path: $font"
             continue
         fi
-        mv -f "$font" "$OUTPUT_DIR/"
+        mv -f "$font" "$target"
         count=$((count + 1))
     done < <(find "$tmp" -type f \( -name "*.otf" -o -name "*.ttf" \) -print0)
 
