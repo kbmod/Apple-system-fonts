@@ -12,9 +12,9 @@ BOLD="\x1B[1m"
 RESET="\x1B[0m"
 
 err()    { echo -e "${RED}${BOLD}[ERROR]${RESET} $*" >&2; }
-ok()     { echo -e "${GREEN}${BOLD}[OK]${RESET} $*"; }
-warn()   { echo -e "${YELLOW}${BOLD}[WARN]${RESET} $*"; }
-info()   { echo -e "${BOLD}[INFO]${RESET} $*"; }
+ok()     { echo -e "${GREEN}${BOLD}[OK]${RESET} $*" >&2; }
+warn()   { echo -e "${YELLOW}${BOLD}[WARN]${RESET} $*" >&2; }
+info()   { echo -e "${BOLD}[INFO]${RESET} $*" >&2; }
 
 # ── Prerequisites ──────────────────────────────────────────────
 check_prerequisite() {
@@ -62,6 +62,14 @@ extract_fonts_from_dmg() {
     local dmg="$1"
     local tmp count=0
 
+    # ── Creating directory for each dmg file ───────────────────
+    local target="$OUTPUT_DIR/$(basename "${dmg%.dmg}")"
+    if ! mkdir -p "$target"; then
+        err "Failed to create output directory: $target"
+        echo "0"
+        return 1
+    fi
+
     info "Processing: $(basename "$dmg")"
 
     tmp="$(mktemp -d)"
@@ -70,7 +78,7 @@ extract_fonts_from_dmg() {
 
     # Step 1: Extract DMG contents
     if ! 7z x "$dmg" -o"$tmp" -bd > /dev/null 2>&1; then
-        err "Failed to extract DMG: $(basename "$dmg")"
+        err "Failed to extract DMG: $(basename "$dmg")\n"
         rm -rf "$tmp"
         echo "0"
         return 1
@@ -97,11 +105,17 @@ extract_fonts_from_dmg() {
             warn "Skipping suspicious path: $font"
             continue
         fi
-        mv -f "$font" "$OUTPUT_DIR/"
+        if ! mv -f "$font" "$target/"; then
+            err "Failed to move font to: $target/"
+            rm -rf "$tmp"
+            trap - RETURN
+            echo "$count"
+            return 1
+        fi
         count=$((count + 1))
     done < <(find "$tmp" -type f \( -name "*.otf" -o -name "*.ttf" \) -print0)
 
-    ok "Extracted $count font(s) from $(basename "$dmg")"
+    ok "Extracted $count font(s) from $(basename "$dmg")\n"
     rm -rf "$tmp"
     trap - RETURN
 
@@ -125,8 +139,7 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
-info "Found ${#dmgs[@]} .dmg file(s). Extracting to: $OUTPUT_DIR"
-echo ""
+info "Found ${#dmgs[@]} .dmg file(s). Extracting to: $OUTPUT_DIR\n"
 
 total_fonts=0
 success=0
