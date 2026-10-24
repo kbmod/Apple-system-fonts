@@ -64,7 +64,11 @@ extract_fonts_from_dmg() {
 
     # ── Creating directory for each dmg file ───────────────────
     local target="$OUTPUT_DIR/$(basename "${dmg%.dmg}")"
-    mkdir -p "$target"
+    if ! mkdir -p "$target"; then
+        err "Failed to create output directory: $target"
+        echo "0"
+        return 1
+    fi
 
     info "Processing: $(basename "$dmg")"
 
@@ -101,7 +105,13 @@ extract_fonts_from_dmg() {
             warn "Skipping suspicious path: $font"
             continue
         fi
-        mv -f "$font" "$target"
+        if ! mv -f "$font" "$target/"; then
+            err "Failed to move font to: $target/"
+            rm -rf "$tmp"
+            trap - RETURN
+            echo "$count"
+            return 1
+        fi
         count=$((count + 1))
     done < <(find "$tmp" -type f \( -name "*.otf" -o -name "*.ttf" \) -print0)
 
